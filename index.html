@@ -1,0 +1,225 @@
+<html>
+
+<head>
+    <script type="text/javascript">
+
+        var count=0;
+        var str="";
+        var audioContext = new(window.AudioContext || window.webkitAudioContext);
+        var osc = audioContext.createOscillator();//创建一个oscillatornode,代表一个
+                                                  //周期的波形。
+        var gain = audioContext.createGain();     //创建一个gainnode，可以用来控制
+                                                  //音频图的整体体积。
+        gain.gain.value = 0;
+        var script = audioContext.createScriptProcessor(1024, 1, 1);
+        osc.frequency.value = 1000.0;
+        osc.connect(gain);
+        gain.connect(script);
+        osc.start(audioContext.currentTime);
+        script.connect(audioContext.destination);
+        var processing = false,t1, t2;
+
+        script.onaudioprocess = function(e,ocontent) {
+            var frameZero = true;
+            var input = e.inputBuffer.getChannelData(0);
+            var output = e.outputBuffer.getChannelData(0);
+            var counter = 0;
+            t2 = performance.now();
+            for (var n = 0; n < input.length; n++) {
+                if (processing) {
+                    if (input[n] !== 0.0 && frameZero) {
+                        frameZero = false;
+                        t2 = t2 + (counter / audioContext.sampleRate * 1000.0);
+                        
+                        str=(t2-t1)+'\n';
+
+                        gain.gain.value = 0;
+                        processing = false;
+                    } else {
+                        counter++;
+                    }
+                }
+                output[n] = input[n];
+            }
+
+        }
+        window.onload = function() {
+             /*var ocontent=document.getElementById("content");
+            alert(ocontent.innerHTML);*/
+            //获取浏览器名字和版本号字符串
+            function getBrowserInfo(){
+                var agent=navigator.userAgent.toLowerCase();
+                var regStr_ie=/msie [\d.]+;/gi;
+                var regStr_ff=/firefox\/[\d.]+/gi;
+                var regStr_chrome=/chrome\/[\d.]+/gi;
+                var regStr_saf=/safari\/[\d.]+/gi;
+                if(agent.indexOf("msie")>0)
+                {
+                    return agent.match(regStr_ie);
+                }
+                if(agent.indexOf("firefox")>0)
+                {
+                    return agent.match(regStr_ff);
+                }
+                if(agent.indexOf("safari")>0&&agent.indexOf("chrome")<0)
+                {
+                    return agent.match(regStr_saf);
+                }
+                if(agent.indexOf("chrome")>0)
+                {
+                    return agent.match(regStr_chrome);
+                }
+            }
+            //获取浏览器版本号
+            var browser=getBrowserInfo();
+            var verinfo=(browser+"").replace(/[^0-9.]/ig,"");
+            document.getElementById("single").onclick = function(event) {
+                t1 = performance.now();
+                processing = true;
+                gain.gain.value = 1.0;
+            }
+            //获取本机操作系统
+            function getOSInfo(){
+                var sUserAgent=navigator.userAgent;
+                var isWin=(navigator.platform=="Win32")||(navigator.platform=="Windows");
+                var isMac=(navigator.platform=="Mac68k")||(navigator.platform=="MacPPC")||(navigator.platform=="Macintosh")||(navigator.platform=="MacIntel")
+                if(isMac) return "Mac";
+                var isUnix=(navigator.platform=="X11")&&!isWin&&!isMac;
+                if(isUnix) return "Unix";
+                var isLinux=(String(navigator.platform).indexOf("Linux")>-1);
+                var isAndroid=sUserAgent.toLowerCase().match(/android/i)=="android";
+                if(isLinux){
+                    if(isAndroid) return "Android";
+                    else return "Linux";
+                }
+                if(isWin){
+                    var isWin2K=sUserAgent.indexOf("Windows NT 5.0")>-1||sUserAgent.indexOf("Windows 2000")>-1;
+                    if(isWin2K) return "Software:Win2000";
+                    var isWinXP=sUserAgent.indexOf("Windows NT 5.1")>-1||sUserAgent.indexOf("Windows xp")>-1;
+                    if(isWinXP) return "Software:WinXP";
+                    var isWin2003=sUserAgent.indexOf("Windows NT 5.2")>-1||sUserAgent.indexOf("Windows 2003")>-1;
+                    if(isWin2003) return "Software:Win2003";
+                    var isWinVista=sUserAgent.indexOf("Windows NT 6.0")>-1||sUserAgent.indexOf("Windows Vista")>-1;
+                    if(isWinVista) return "Software:WinVista";
+                    var isWin7=sUserAgent.indexOf("Windows NT 6.1")>-1||sUserAgent.indexOf("Windows 7")>-1;
+                    if(isWin7) return "Software:Win7";
+                    var isWin8=sUserAgent.indexOf("Windows NT 6.2")>-1||sUserAgent.indexOf("Windows 8")>-1;
+                    if(isWin8) return "Software:Win8";
+                    var isWin10=sUserAgent.indexOf("Windows NT 10.0")>-1||sUserAgent.indexOf("Windows 10")>-1;
+                    if(isWin10) return "Software:Win10";
+                }
+                return "others";
+            }
+            //获取本机位数
+            function getDigits(){
+                var agent=navigator.userAgent.toLowerCase();
+                var sUserAgent=navigator.userAgent;
+                var is64=sUserAgent.indexOf("WOW64")>-1;
+                if(is64){
+                    return "64bits";
+                }else{
+                    return "32bits";
+                }
+            }
+            document.getElementById("repeat-timer").onmousemove = function(event) {
+                if (!event.currentTarget.disabled) {
+                    document.getElementById("repeat-timer-value").textContent = event.currentTarget.value + "ms";
+                }
+            }
+                var ocontent=document.getElementById("content");
+                ocontent.innerHTML=browser+verinfo+"\t"+getOSInfo()+"\t"+getDigits()+"\n";
+                var num=0;
+                var timer=window.setInterval(function() {
+                    if(num==5){
+                       
+                        clearInterval(timer);
+                    }
+                    ocontent.innerHTML+=str;
+                    t1 = performance.now();
+                    processing = true;
+                    gain.gain.value = 1.0;
+                    num++;
+                    count++;
+                },Number(document.getElementById("repeat-timer").value))
+        }
+    </script>
+    <style type="text/css">
+        #main{
+            width: 500px;
+            margin: 50px auto;
+        }
+        #single,#repeat{
+            width: 100px;
+            height: 50px;
+            background-color: #0491B7;
+            color: #fff;
+            border-radius: 10px;
+            border: none;
+        }
+        #repeat{
+            margin-top: 20px;
+        }
+        #box{
+            position: absolute;
+            /*border: 1px solid #000;*/
+        }
+        #span1{
+            position: absolute;
+            top:30px;
+            left: 150px;
+        }
+        #repeat-timer{
+            position: absolute;
+            top:28px;
+            left:200px;
+        }
+        #repeat-timer-value{
+             position: absolute;
+             top:30px;
+             left: 430px;
+            }  
+        #oform{
+            position: absolute;
+            top:300px;
+        }
+        #save{
+            position: absolute;
+            width: 100px;
+            height: 50px;
+            background-color: #0491B7;
+            color: #fff;
+            border-radius: 10px;
+            border: none;
+            font-size:24px;
+            right: -20px;
+            top:-20px;
+        }
+    </style>
+</head>
+
+<body>
+<div id="main">
+    <h1>Repeat Events</h1>
+    <div style="display:flex, padding: 20px">
+        <div style="display:flex, border:1px solid black, padding: 5px">
+            <button id="single">Single Event</button>
+        </div>
+        <div id="box" style="display:flex, border:1px solid black, padding: 5px">
+            <button id="repeat">Repeat Event</button>
+            <div >
+                <span id="span1">Interval: </span>
+                <input id="repeat-timer" type="range" min="100" max="1000" step="1" />
+                <span id="repeat-timer-value"></span>
+            </div>
+        </div>
+    </div>
+
+    <form id="oform" action="server.php" method="post">
+        <textarea id="content" name="content" style='width:500px; height:500px; overflow: auto;border: 10px solid #0491B7;padding: 10px'>
+        </textarea>
+        <input id="save" type="submit" value="save"></input>
+    </form>
+</div>
+</body>
+
+</html>
